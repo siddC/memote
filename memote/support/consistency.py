@@ -80,7 +80,7 @@ def check_stoichiometric_consistency(model):
     # The transpose of the stoichiometric matrix N.T in the paper.
     stoich_trans = Model()
     biomass = helpers.find_biomass_reaction(model)
-    non_biomass_rxns = set(model.reactions) - biomass
+    non_biomass_rxns = set(model.reactions) - set(biomass)
     internal_rxns = con_helpers.get_internals(model, biomass)
     internal_mets = set(
         met for rxn in internal_rxns for met in rxn.metabolites)
