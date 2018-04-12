@@ -79,17 +79,22 @@ def check_stoichiometric_consistency(model):
     Model, Constraint, Variable, Objective = con_helpers.get_interface(model)
     # The transpose of the stoichiometric matrix N.T in the paper.
     stoich_trans = Model()
-    internal_rxns = con_helpers.get_internals(model)
-    metabolites = set(met for rxn in internal_rxns for met in rxn.metabolites)
-    LOGGER.info("model '%s' has %d internal reactions", model.id,
-                len(internal_rxns))
-    LOGGER.info("model '%s' has %d internal metabolites", model.id,
-                len(metabolites))
-    for metabolite in metabolites:
+    biomass = helpers.find_biomass_reaction(model)
+    non_biomass_rxns = set(model.reactions) - biomass
+    internal_rxns = con_helpers.get_internals(model, biomass)
+    internal_mets = set(
+        met for rxn in internal_rxns for met in rxn.metabolites)
+    LOGGER.info(
+        "model '%s' has %d reactions, of which %d are internal reactions",
+        model.id, len(non_biomass_rxns), len(internal_rxns))
+    LOGGER.info(
+        "model '%s' has %d metabolites, of which %d are internal metabolites",
+        model.id, len(model.metabolites), len(internal_mets))
+    for metabolite in model.metabolites:
         stoich_trans.add(Variable(metabolite.id, lb=1))
     stoich_trans.update()
     con_helpers.add_reaction_constraints(
-        stoich_trans, internal_rxns, Constraint)
+        stoich_trans, non_biomass_rxns, Constraint)
     # The objective is to minimize the metabolite mass vector.
     stoich_trans.objective = Objective(1)
     stoich_trans.objective.set_linear_coefficients(
