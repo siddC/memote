@@ -215,6 +215,9 @@ def get_internals(model, biomass=None):
     model : cobra.Model
         The metabolic model under investigation.
 
+    biomass : list or cobra.Reaction, optional
+        A list of cobrapy biomass reactions
+
     """
     if biomass is None:
         biomass = set(find_biomass_reaction(model))
