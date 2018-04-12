@@ -203,7 +203,7 @@ def get_interface(model):
     )
 
 
-def get_internals(model):
+def get_internals(model, biomass=None):
     """
     Return non-exchange reactions and their metabolites.
 
@@ -216,7 +216,8 @@ def get_internals(model):
         The metabolic model under investigation.
 
     """
-    biomass = set(find_biomass_reaction(model))
+    if biomass is None:
+        biomass = set(find_biomass_reaction(model))
     if len(biomass) == 0:
         LOGGER.warn("No biomass reaction detected. Consistency test results "
                     "are unreliable if one exists.")
