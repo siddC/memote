@@ -208,6 +208,10 @@ def find_inconsistent_min_stoichiometry(model, atol=1e-13):
         left_ns, metabolites, Model, Variable, Constraint, Objective)
     LOGGER.debug(str(problem))
     cuts = list()
+    # FIXME: Ensure solver tolerances are not too high
+    # Continue work on this, more tweaking needed
+    model.solver.configuration.tolerances.feasibility = 1e-12
+    model.solver.configuration.tolerances.integrality = 1e-12
     for met in unconserved_mets:
         row = met_index[met]
         if (left_ns[row] == 0.0).all():
