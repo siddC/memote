@@ -27,7 +27,15 @@ LOGGER = logging.getLogger(__name__)
 
 
 def absolute_extreme_coefficient_ratio(model):
-    """Return the absolute max and absolute non-zero min coefficients."""
+    """
+    Return the absolute max and absolute non-zero min coefficients.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The metabolic model under investigation.
+
+    """
     # S-Matrix with absolute values:
     s_matrix, _, _ = con_helpers.stoichiometry_matrix(
         model.metabolites, model.reactions
@@ -41,25 +49,49 @@ def absolute_extreme_coefficient_ratio(model):
 
 
 def number_independent_conservation_relations(model):
-    """Return the amount of conserved metabolic pools."""
+    """
+    Return the amount of conserved metabolic pools.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The metabolic model under investigation.
+
+    """
     s_matrix, _, _ = con_helpers.stoichiometry_matrix(
         model.metabolites, model.reactions
     )
-    ln_matrix = con_helpers.nullspace_basis(s_matrix.T)
+    ln_matrix = con_helpers.nullspace(s_matrix.T)
     return ln_matrix.shape[1]
 
 
 def number_steady_state_flux_solutions(model):
-    """Return the amount of steady-state flux solutions of this model."""
+    """
+    Return the amount of steady-state flux solutions of this model.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The metabolic model under investigation.
+
+    """
     s_matrix, _, _ = con_helpers.stoichiometry_matrix(
         model.metabolites, model.reactions
     )
-    n_matrix = con_helpers.nullspace_basis(s_matrix)
+    n_matrix = con_helpers.nullspace(s_matrix)
     return n_matrix.shape[1]
 
 
 def matrix_rank(model):
-    """Return the rank of the model's stoichiometric matrix."""
+    """
+    Return the rank of the model's stoichiometric matrix.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The metabolic model under investigation.
+
+    """
     s_matrix, _, _ = con_helpers.stoichiometry_matrix(
         model.metabolites, model.reactions
     )
@@ -69,6 +101,11 @@ def matrix_rank(model):
 def degrees_of_freedom(model):
     """
     Return the degrees of freedom, i.e. number of "free variables".
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The metabolic model under investigation.
 
     Notes:
     ------
@@ -80,10 +117,10 @@ def degrees_of_freedom(model):
     References:
     -----------
     .. [1] Fukuda, K. & Terlaky, T. Criss-cross methods: A fresh view on
-           pivot algorithms. Mathematical Programming 79, 369-395 (1997).
+       pivot algorithms. Mathematical Programming 79, 369-395 (1997).
 
     .. [2] Alama, J. The Rank+Nullity Theorem. Formalized Mathematics 15,
-           (2007).
+       (2007).
 
     """
     s_matrix, _, _ = con_helpers.stoichiometry_matrix(

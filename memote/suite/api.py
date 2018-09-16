@@ -25,9 +25,8 @@ import pytest
 
 from memote.suite import TEST_DIRECTORY
 from memote.suite.collect import ResultCollectionPlugin
-from memote.suite.results import HistoryManager
 from memote.suite.reporting import (
-    SnapshotReport, HistoryReport, ReportConfiguration)
+    SnapshotReport, DiffReport, HistoryReport, ReportConfiguration)
 
 __all__ = ("test_model", "snapshot_report", "diff_report", "history_report")
 
@@ -99,15 +98,13 @@ def snapshot_report(result, config=None, html=True):
         return report.render_json()
 
 
-def history_report(repository, manager, config=None, html=True):
+def history_report(history, config=None, html=True):
     """
     Test a model and save a history report.
 
     Parameters
     ----------
-    repository : git.Repo, optional
-        An instance of the working directory git repository.
-    manager : memote.RepoResultManager
+    history : memote.HistoryManager
         The manager grants access to previous results.
     config : dict, optional
         The final test report configuration.
@@ -117,15 +114,31 @@ def history_report(repository, manager, config=None, html=True):
     """
     if config is None:
         config = ReportConfiguration.load()
-    report = HistoryReport(
-        history=HistoryManager(repository=repository, manager=manager),
-        configuration=config)
+    report = HistoryReport(history=history, configuration=config)
     if html:
         return report.render_html()
     else:
         return report.render_json()
 
 
-def diff_report():
-    u"""Coming soon™."""
-    raise NotImplementedError(u"Coming soon™.")
+def diff_report(diff_results, config=None, html=True):
+    """
+    Generate a diff report from a result set and configuration.
+
+    Parameters
+    ----------
+    result : memote.MemoteResult
+        Nested dictionary structure as returned from the test suite.
+    config : dict, optional
+        The final test report configuration (default None).
+    html : bool, optional
+        Whether to render the report as full HTML or JSON (default True).
+
+    """
+    if config is None:
+        config = ReportConfiguration.load()
+    report = DiffReport(diff_results=diff_results, configuration=config)
+    if html:
+        return report.render_html()
+    else:
+        return report.render_json()

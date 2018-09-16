@@ -16,10 +16,10 @@
 # limitations under the License.
 
 """
-(Me)tabolic (Mo)del (Te)sts.
+(me)tabolic (mo)del (te)sts.
 
-The memote Python package provides a number of hard and soft expectations about
-genome-scale metabolic models.
+The memote Python package is a community-driven effort towards a standardized
+genome-scale metabolic model test suite.
 """
 
 from __future__ import absolute_import
@@ -28,7 +28,8 @@ from memote.utils import show_versions
 from memote.suite.api import *
 from memote.suite.results import *
 from memote.suite.reporting import *
+from memote.jinja2_extension import *
 
 __author__ = "Moritz E. Beber"
 __email__ = "morbeb@biosustain.dtu.dk"
-__version__ = "0.7.6"
+__version__ = "0.8.6"

@@ -125,8 +125,6 @@ class RepoResultManager(ResultManager):
 
         """
         git_info = self.record_git_info(commit)
-        LOGGER.critical(git_info)
-        LOGGER.critical(self._backend)
         self.add_git(result.meta, git_info)
         filename = self.get_filename(git_info)
         super(RepoResultManager, self).store(
@@ -135,7 +133,9 @@ class RepoResultManager(ResultManager):
     def load(self, commit=None):
         """Load a result from the storage directory."""
         git_info = self.record_git_info(commit)
+        LOGGER.debug("Loading the result for commit '%s'.", git_info.hexsha)
         filename = self.get_filename(git_info)
+        LOGGER.debug("Loading the result '%s'.", filename)
         result = super(RepoResultManager, self).load(filename)
         self.add_git(result.meta, git_info)
         return result

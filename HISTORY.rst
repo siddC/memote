@@ -3,11 +3,69 @@ History
 
 Next Release
 ------------
+
+0.8.6 (2018-09-13)
+------------------
+* Fix test titles and descriptions.
+
+0.8.5 (2018-08-20)
+------------------
+* Unpin cobra dependency and set it to >0.13.3.
+* Set ruamel.yaml to >=0.15 to keep up with cobra.
+
+0.8.4 (2018-07-18)
+------------------
+* Handle various pytest verbosity options better.
+* Improve ``memote new`` behavior.
+
+0.8.3 (2018-07-16)
+------------------
+* ``memote run`` in a repository now immediately commits the result to the
+  deployment branch.
+
+0.8.2 (2018-07-16)
+------------------
+* Allow running of ``memote history`` from any branch.
+* Let the history report only use commits where the model actually changed.
+* Proofread and update all docstrings and comments inside the ``memote``
+  subfolder.
+* Reworded all test titles to be a) shorter and b) as neutral as was
+  sensibly possible.
+* Reordered tests in the `test-config.yaml` such that results belonging to a
+  category are grouped logically.
+* Updated the documentation to include a newer flowchart, up-to-date getting
+  started and custom test sections.
+* Update code to account for breaking changes in the most recent version of 
+  cobrapy (0.13.0) and subsequently unpin cobrapy dependency (set to >=0.13.0).
+
+0.8.1 (2018-06-27)
+------------------
+* Allow users to selective recompute the history of results.
+* Skip commits in the history that did not change the model file.
+* Change format_type on experimental tests from `count` to `percent`
+* Fix typo in `test_basic.py` that lead to tests returning `null` which breaks
+  the diff report frontend.
+* Update the diff report to properly show errored and skipped tests
+* Fix issues with asynchronicity on the diff report.
+* Change format_type on experimental tests from ``count`` to ``percent``
+* Fix typo in ``test_basic.py`` that lead to tests returning `null` which
+  breaks the diff report frontend.
+* Update the diff report to properly show errored and skipped tests
+
+
+0.8.0 (2018-06-22)
+------------------
+* Finalize testing comparing with experimental data (growth and esentiality).
+* Temporarily disable ``test_find_inconsistent_min_stoichiometry``.
+* Update the nullspace function.
+* Improve optlang compatibility.
 * Add test ``find_medium_metabolites`` to detect and display all substrates
   capable of being taken up by model
 * Display the score on History and Snapshot reports.
 * Invert the colour coding.
 * Display results as percentages.
+* Add ability to generate a diff report which compares two or more models.
+* Annotation of metabolite shortlist simplified.
 
 0.7.6 (2018-05-28)
 ------------------

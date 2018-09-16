@@ -26,6 +26,7 @@ from builtins import open
 import click
 import git
 from sqlalchemy.exc import ArgumentError
+import os
 
 import memote.suite.api as api
 import memote.suite.results as managers
@@ -108,10 +109,18 @@ def snapshot(model, filename, pytest_args, exclusive, skip, solver,
 
 @report.command(context_settings=CONTEXT_SETTINGS)
 @click.help_option("--help", "-h")
-@click.argument("location", envvar="MEMOTE_LOCATION")
+@click.option("--location", envvar="MEMOTE_LOCATION",
+              help="Location of test results. Can either by a directory or an "
+                   "rfc1738 compatible database URL.")
+@click.option("--model", envvar="MEMOTE_MODEL",
+              help="The path of the model file. Used to check if it was "
+                   "modified.")
 @click.option("--filename", type=click.Path(exists=False, writable=True),
               default="index.html", show_default=True,
               help="Path for the HTML report output.")
+@click.option("--deployment", default="gh-pages", show_default=True,
+              help="Results will be read from and committed to the given "
+                   "branch.")
 @click.option("--custom-config", type=click.Path(exists=True, dir_okay=False),
               multiple=True,
               help="A path to a report configuration file that will be merged "
@@ -120,23 +129,21 @@ def snapshot(model, filename, pytest_args, exclusive, skip, solver,
                    "it can also alter the default behavior. Please refer to "
                    "the documentation for the expected YAML format used. This "
                    "option can be specified multiple times.")
-def history(location, filename, custom_config):
-    """
-    Generate a report over a model's git commit history.
-
-    DIRECTORY: Expect JSON files corresponding to the branch's commit history
-    to be found here. Or it can be an rfc1738 compatible database URL. Can
-    also be supplied via the environment variable
-    MEMOTE_DIRECTORY or configured in 'setup.cfg' or 'memote.ini'.
-
-    """
+def history(location, model, filename, deployment, custom_config):
+    """Generate a report over a model's git commit history."""
+    if model is None:
+        raise click.BadParameter("No 'model' path given or configured.")
+    if location is None:
+        raise click.BadParameter("No 'location' given or configured.")
     try:
         repo = git.Repo()
     except git.InvalidGitRepositoryError:
         LOGGER.critical(
             "The history report requires a git repository in order to check "
-            "the current branch's commit history.")
+            "the model's commit history.")
         sys.exit(1)
+    previous = repo.active_branch
+    repo.heads[deployment].checkout()
     try:
         manager = managers.SQLResultManager(repository=repo, location=location)
     except (AttributeError, ArgumentError):
@@ -146,18 +153,83 @@ def history(location, filename, custom_config):
     # Update the default test configuration with custom ones (if any).
     for custom in custom_config:
         config.merge(ReportConfiguration.load(custom))
+    history = managers.HistoryManager(repository=repo, manager=manager)
+    history.load_history(model, skip={deployment})
+    report = api.history_report(history, config=config)
+    previous.checkout()
     with open(filename, "w", encoding="utf-8") as file_handle:
-        file_handle.write(api.history_report(
-            repo, manager, config=config))
+        file_handle.write(report)
 
 
 @report.command(context_settings=CONTEXT_SETTINGS)
 @click.help_option("--help", "-h")
-@click.argument("modela", type=click.Path(exists=True, dir_okay=False))
-@click.argument("modelb", type=click.Path(exists=True, dir_okay=False))
+@click.argument("models", type=click.Path(exists=True, dir_okay=False),
+                nargs=-1)
 @click.option("--filename", type=click.Path(exists=False, writable=True),
               default="index.html", show_default=True,
               help="Path for the HTML report output.")
-def diff(modela, modelb, filename):
-    """Compare two metabolic models against each other."""
-    raise NotImplementedError(u"Coming soon™.")
+@click.option("--pytest-args", "-a", callback=callbacks.validate_pytest_args,
+              help="Any additional arguments you want to pass to pytest. "
+                   "Should be given as one continuous string.")
+@click.option("--exclusive", type=str, multiple=True, metavar="TEST",
+              help="The name of a test or test module to be run exclusively. "
+                   "All other tests are skipped. This option can be used "
+                   "multiple times and takes precedence over '--skip'.")
+@click.option("--skip", type=str, multiple=True, metavar="TEST",
+              help="The name of a test or test module to be skipped. This "
+                   "option can be used multiple times.")
+@click.option("--solver", type=click.Choice(["cplex", "glpk", "gurobi"]),
+              default="glpk", show_default=True,
+              help="Set the solver to be used.")
+@click.option("--experimental", type=click.Path(exists=True, dir_okay=False),
+              default=None, callback=callbacks.validate_experimental,
+              help="Define additional tests using experimental data.")
+@click.option("--custom-tests", type=click.Path(exists=True, file_okay=False),
+              multiple=True,
+              help="A path to a directory containing custom test "
+                   "modules. Please refer to the documentation for more "
+                   "information on how to write custom tests "
+                   "(memote.readthedocs.io). This option can be specified "
+                   "multiple times.")
+@click.option("--custom-config", type=click.Path(exists=True, dir_okay=False),
+              multiple=True,
+              help="A path to a report configuration file that will be merged "
+                   "into the default configuration. It's primary use is to "
+                   "configure the placement and scoring of custom tests but "
+                   "it can also alter the default behavior. Please refer to "
+                   "the documentation for the expected YAML format used "
+                   "(memote.readthedocs.io). This option can be specified "
+                   "multiple times.")
+def diff(models, filename, pytest_args, exclusive, skip, solver,
+         experimental, custom_tests, custom_config):
+    """
+    Take a snapshot of all the supplied models and generate a diff report.
+
+    MODELS: List of paths to two or more model files.
+    """
+    if not any(a.startswith("--tb") for a in pytest_args):
+        pytest_args = ["--tb", "no"] + pytest_args
+    # Add further directories to search for tests.
+    pytest_args.extend(custom_tests)
+    config = ReportConfiguration.load()
+    # Update the default test configuration with custom ones (if any).
+    for custom in custom_config:
+        config.merge(ReportConfiguration.load(custom))
+    # Build the diff report specific data structure
+    diff_results = dict()
+    for model_path in models:
+        try:
+            model_filename = os.path.basename(model_path)
+            diff_results.setdefault(model_filename, dict())
+            model = callbacks._load_model(model_path)
+            model.solver = solver
+            _, diff_results[model_filename] = api.test_model(
+                model, results=True, pytest_args=pytest_args,
+                skip=skip, exclusive=exclusive, experimental=experimental)
+        except Exception as e:
+            LOGGER.warning(
+                "The following exception occurred while loading model {}: {}"
+                "".format(model_filename, e))
+    with open(filename, "w", encoding="utf-8") as file_handle:
+        LOGGER.info("Writing diff report to '%s'.", filename)
+        file_handle.write(api.diff_report(diff_results, config))

@@ -197,6 +197,13 @@ def find_protein_complexes(model):
     model : cobra.Model
         The metabolic model under investigation.
 
+    Returns
+    -------
+    set
+        A set of tuples of genes that are connected via "AND" in
+        gene-protein-reaction rules (GPR) and thus constitute protein
+        complexes.
+
     """
     protein_complexes = set()
     for rxn in model.reactions:
@@ -250,16 +257,20 @@ def find_duplicate_metabolites_in_compartments(model):
     """
     Return list of metabolites with duplicates in the same compartment.
 
-    All comparments in models should have a unique set of metabolites. This
-    functions checks for and returns a list of tuples contaning the duplicate
-    metabolites. An example of this would be finding compounds with IDs ATP1
-    and ATP2 in the cytosolic compartment, with both having identical InChI
-    annotations.
+    This function identifies duplicate metabolites in each compartment by
+    determining if any two metabolites have identical InChI-key annotations.
+    For instance, this function would find compounds with IDs ATP1 and ATP2 in
+    the cytosolic compartment, with both having the same InChI annotations.
 
     Parameters
     ----------
     model : cobra.Model
-        The metabolic model under investigation
+        The metabolic model under investigation.
+
+    Returns
+    -------
+    list
+        A list of tuples of duplicate metabolites.
 
     """
     duplicates = []
@@ -277,23 +288,26 @@ def find_duplicate_reactions(model):
     """
     Return list of reactions with duplicates.
 
-    All models should contain a unique set of reactions. This function checks
-    for and returns a list of tuples containing the duplicate reactions. An
-    example of this would be finding reactions PGI1 and PGI2, both of which
-    convert G6P(c) to F6P(c) in the same compartments.
+    This function identifies duplicate reactions in each compartment by
+    determining if any two metabolites have identical annotations.
+    For instance, this function would find compounds with IDs ATP1 and ATP2 in
+    the cytosolic compartment, with both having the same InChI annotations.
 
     Parameters
     ----------
     model : cobra.Model
-        The metabolic model under investigation
+        The metabolic model under investigation.
+
+    Returns
+    -------
+    list
+        A list of tuples of duplicate reacions.
 
     """
     duplicates = []
     rxn_db_identifiers = ["metanetx.reaction", "kegg.reaction", "brenda",
                           "rhea", "biocyc", "bigg.reaction"]
 
-    # TODO: Fix bug where duplicates double count tuples, fix bug where having
-    # the same key qualifies 2 annoations values as being equal.
     ann_rxns = []
     for rxn in model.reactions:
         ann = []
@@ -306,7 +320,7 @@ def find_duplicate_reactions(model):
         ann_rxns.append((rxn, frozenset(ann)))
     for (rxn_a, ann_a), (rxn_b, ann_b) in combinations(ann_rxns, 2):
         if len(ann_a & ann_b) > 0:
-            duplicates.append((rxn_a, rxn_b))
+            duplicates.append((rxn_a.id, rxn_b.id))
     return duplicates
 
 
@@ -318,5 +332,5 @@ def check_transport_reaction_gpr_presence(model):
 
 def find_medium_metabolites(model):
     """Return the list of metabolites ingested/excreted by the model."""
-    return set([met.id for rxn in model.medium
-                for met in model.reactions.get_by_id(rxn).metabolites])
+    return [met.id for rxn in model.medium
+            for met in model.reactions.get_by_id(rxn).metabolites]
